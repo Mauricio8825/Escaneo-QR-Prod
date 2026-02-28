@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>SSP Montilla | Escaneo</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <style>
+    :root{
+      --bg:#ffffff;
+      --card:#f4f4f6;
+      --line:#d9d9df;
+      --text:#111;
+      --muted:#666;
+      --btn:#1677ff;
+      --btnText:#fff;
+      --bad:#d93025;
+      --ok:#1e8e3e;
+      --r:12px;
+      --sans: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+    *{ box-sizing:border-box; }
+    body{ margin:0; font-family:var(--sans); background:var(--bg); color:var(--text); }
+    .wrap{ max-width:420px; margin:0 auto; padding:14px; }
+
+    .header{
+      display:flex; align-items:center; gap:12px;
+      padding:10px 6px 6px;
+    }
+    .logoBox{
+      width:56px; height:56px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#fff;
+      display:flex; align-items:center; justify-content:center;
+      overflow:hidden; flex:0 0 auto;
+    }
+    .logoBox img{ width:100%; height:100%; object-fit:contain; }
+    .titleBox{ flex:1 1 auto; }
+    h2{ margin:0; font-size:18px; line-height:1.1; }
+    .sub{ margin:2px 0 0; color:var(--muted); font-size:13px; }
+
+    .card{ background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:12px; }
+    #reader{ width:100%; border-radius:10px; overflow:hidden; border:1px solid var(--line); background:#000; }
+
+    .btnrow{ display:flex; gap:10px; margin-top:10px; }
+    button{
+      width:100%;
+      border:none; border-radius:10px;
+      padding:10px 12px; font-weight:700;
+      background:var(--btn); color:var(--btnText);
+      cursor:pointer;
+    }
+    button.secondary{ background:#fff; color:#111; border:1px solid var(--line); }
+    button:disabled{ opacity:.6; cursor:not-allowed; }
+
+    label{ display:block; margin-top:10px; font-size:12px; color:var(--muted); }
+    input, textarea, select{
+      width:100%; padding:10px 10px;
+      border-radius:10px;
+      border:1px solid var(--line);
+      background:#fff; color:#111;
+      outline:none;
+    }
+    textarea{ min-height:60px; resize:vertical; }
+    .inline{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .hidden{ display:none; }
+
+    .status{
+      margin-top:10px;
+      font-size:12px;
+      border:1px dashed var(--line);
+      border-radius:10px;
+      padding:10px;
+      color:var(--muted);
+      white-space:pre-wrap;
+    }
+    .bad{ color:var(--bad); }
+    .ok{ color:var(--ok); }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+
+    <!-- Header con logo -->
+    <div class="header">
+      <div class="logoBox">
+        <!-- Coloca logo.png en la MISMA carpeta que este HTML -->
+        <img src="logo.png" alt="Logo" id="logoImg"
+             onerror="this.style.display='none'; document.getElementById('logoPlaceholder').style.display='block';">
+        <span id="logoPlaceholder" style="color:#999;font-size:11px;display:none;">LOGO</span>
+      </div>
+      <div class="titleBox">
+        <h2>Escaneo de Material</h2>
+        <p class="sub">Escanea el código QR y registra la evidencia.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div id="reader"></div>
+
+      <label>Cámara</label>
+      <select id="cameraSelect"></select>
+
+      <div class="btnrow">
+        <button id="btnStart" type="button">Iniciar</button>
+        <button id="btnRetry" type="button" class="secondary">Reintentar</button>
+      </div>
+
+      <div class="status" id="scanState">Estado: listo</div>
+    </div>
+
+    <form id="form" class="card" style="margin-top:12px;">
+      <!-- Ocultos (para Excel) -->
+      <input type="hidden" id="qr_raw">
+      <input type="hidden" id="area_full">
+      <input type="hidden" id="area_code">
+      <input type="hidden" id="atados_norm">
+      <input type="hidden" id="atado_actual">
+      <input type="hidden" id="atados_total">
+      <input type="hidden" id="medida">
+      <input type="hidden" id="pn">
+
+      <!-- Visible minimal -->
+      <label>Pedido</label>
+      <input id="pedido" readonly>
+
+      <label>Descripción</label>
+      <textarea id="descripcion" readonly></textarea>
+
+      <div class="inline">
+        <div>
+          <label>Cantidad</label>
+          <input id="cantidad" readonly>
+        </div>
+        <div>
+          <label>Atados</label>
+          <input id="atados_view" readonly placeholder="56/78">
+        </div>
+      </div>
+
+      <label>Operador / Soldador</label>
+      <select id="operador">
+        <option value="">-- Escanea un QR --</option>
+      </select>
+
+      <div class="inline">
+        <div>
+          <label>¿Cantidad correcta?</label>
+          <select id="cantidad_ok">
+            <option value="">--</option>
+            <option value="Sí">Sí</option>
+            <option value="No">No</option>
+          </select>
+        </div>
+        <div id="realWrap" class="hidden">
+          <label>Cantidad real</label>
+          <input id="cantidad_real" type="number" min="0" inputmode="numeric">
+        </div>
+      </div>
+
+      <label>Observaciones</label>
+      <textarea id="observaciones"></textarea>
+
+      <label>Foto evidencia (opcional)</label>
+      <input id="foto" type="file" accept="image/*">
+
+      <div class="btnrow" style="margin-top:12px;">
+        <button id="btnSend" type="submit" disabled>Registrar</button>
+      </div>
+
+      <div class="status" id="logBox">LOG: esperando QR…</div>
+    </form>
+  </div>
+
+<script>
+(() => {
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwbfT9RDX2ZNzLstarhXNzMuIuxD2_og1yOD_9YS0gOroqfj0OCu6xZfEsJD-hybK5y/exec";
+
+  let html5Qr = null;
+
+  // Anti-duplicados escáner
+  let lastScanText = "";
+  let lastScanAt = 0;
+  const DUP_WINDOW_MS = 2500;
+
+  // Anti doble submit
+  let isSubmitting = false;
+
+  const $ = (id) => document.getElementById(id);
+  const scanState = $("scanState");
+  const logBox = $("logBox");
+  const btnStart = $("btnStart");
+  const btnRetry = $("btnRetry");
+  const btnSend = $("btnSend");
+
+  const cameraSelect = $("cameraSelect");
+
+  const cantidadOk = $("cantidad_ok");
+  const realWrap = $("realWrap");
+  const cantidadReal = $("cantidad_real");
+
+  function setScanStatus(msg, cls="") {
+    scanState.className = "status " + cls;
+    scanState.textContent = "Estado: " + msg;
+  }
+  function log(msg, bad=false) {
+    logBox.className = "status " + (bad ? "bad" : "");
+    logBox.textContent = "LOG: " + msg;
+  }
+
+  function setReadyToSubmit(ready){
+    btnSend.disabled = !ready;
+  }
+
+  // ===== Normalizadores =====
+  function normalizeText_(s){
+    return String(s || "")
+      .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+      .replace(/[^\w\s]/g," ")
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g," ");
+  }
+
+  function areaToCode2(areaFull){
+    if(!areaFull) return "";
+    const MAP = {
+      "soldadura": "SL",
+      "corte": "CT",
+      "roll former": "RF",
+      "embarques": "EM",
+      "dobles y troquel": "DT",
+      "pintura": "PN",
+      "rodamientos": "RD"
+    };
+    const ALIAS = { "rollformer": "roll former", "doblesytroquel": "dobles y troquel" };
+
+    let norm = normalizeText_(areaFull);
+    const compact = norm.replace(/\s/g,"");
+    if (ALIAS[compact]) norm = ALIAS[compact];
+    if (MAP[norm]) return MAP[norm];
+
+    const stop = new Set(["y","de","del","la","las","el","los","area","linea","etc"]);
+    const words = norm.split(" ").filter(w => w && !stop.has(w));
+    if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+    if (words.length === 1) {
+      const w = words[0].toUpperCase();
+      return (w[0] || "X") + (w[1] || w[0] || "X");
+    }
+    return "XX";
+  }
+
+  function safeInt(s){
+    const n = Number(String(s).trim());
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function normalizeAtados(text){
+    if (!text) return { ok:false };
+    let t = String(text).trim();
+    t = t.replace(/\s+/g," ");
+    t = t.replace(/de/gi,"/");
+    t = t.replace(/\\/g,"/");
+    t = t.replace(/-/g,"/");
+    t = t.replace(/\s*\/\s*/g,"/").trim();
+    const parts = t.split("/");
+    if (parts.length !== 2) return { ok:false };
+    const a = safeInt(parts[0]);
+    const b = safeInt(parts[1]);
+    if (a === null || b === null || b <= 0 || a < 0) return { ok:false };
+    return { ok:true, a, b, norm:`${a}/${b}` };
+  }
+
+  // ===== Parse QR =====
+  function parseQR(raw){
+    const parts = String(raw).split("|").map(x => x.trim());
+    if (parts.length < 7) return { ok:false, error:`QR incompleto (${parts.length}/7).` };
+
+    const [area, pedido, descripcion, cantidad, atados, medida, pn] = parts;
+
+    const cant = safeInt(cantidad);
+    if (cant === null || cant < 0) return { ok:false, error:`Cantidad inválida: ${cantidad}` };
+
+    const at = normalizeAtados(atados);
+    if (!at.ok) return { ok:false, error:`Atados inválido: ${atados}` };
+
+    return {
+      ok:true,
+      data: {
+        qr_raw: raw,
+        area_full: area,
+        area_code: areaToCode2(area),
+        pedido,
+        descripcion,
+        cantidad: String(cant),
+        atados_norm: at.norm,
+        atado_actual: String(at.a),
+        atados_total: String(at.b),
+        medida,
+        pn
+      }
+    };
+  }
+
+  function fillMinimal(d){
+    $("qr_raw").value = d.qr_raw;
+    $("area_full").value = d.area_full;
+    $("area_code").value = d.area_code;
+    $("atados_norm").value = d.atados_norm;
+    $("atado_actual").value = d.atado_actual;
+    $("atados_total").value = d.atados_total;
+    $("medida").value = d.medida;
+    $("pn").value = d.pn;
+
+    $("pedido").value = d.pedido;
+    $("descripcion").value = d.descripcion;
+    $("cantidad").value = d.cantidad;
+    $("atados_view").value = d.atados_norm;
+  }
+
+  // ===== Operadores =====
+  async function loadOperators(areaFull){
+    const sel = $("operador");
+    sel.innerHTML = `<option value="">Cargando…</option>`;
+
+    try{
+      const url = `${SCRIPT_URL}?action=operators&area=${encodeURIComponent(areaFull)}`;
+      const res = await fetch(url, { method:"GET" });
+      const data = await res.json();
+      if(!res.ok || data.ok === false) throw new Error(data.error || "No se pudo leer Personal");
+
+      const ops = (data.operators || []).filter(Boolean);
+      if(!ops.length){
+        sel.innerHTML = `<option value="">(Sin operadores en Personal)</option>`;
+        return;
+      }
+      sel.innerHTML = `<option value="">-- Selecciona --</option>` + ops.map(o => `<option>${escapeHtml(o)}</option>`).join("");
+    }catch(err){
+      sel.innerHTML = `<option value="">(Error al cargar)</option>`;
+      log("Error operadores: " + err.message, true);
+    }
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, m => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[m]));
+  }
+
+  // ===== Foto compress =====
+  function fileToImage(file){
+    return new Promise((resolve,reject)=>{
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = ()=>{ URL.revokeObjectURL(url); resolve(img); };
+      img.onerror = reject;
+      img.src = url;
+    });
+  }
+  function fit(w,h,maxDim){
+    const s = Math.min(1, maxDim / Math.max(w,h));
+    return { w: Math.round(w*s), h: Math.round(h*s) };
+  }
+  function blobToBase64(blob){
+    return new Promise((resolve,reject)=>{
+      const r = new FileReader();
+      r.onload = ()=> resolve(String(r.result).split(",")[1] || "");
+      r.onerror = reject;
+      r.readAsDataURL(blob);
+    });
+  }
+  async function compressToJpegBase64(file, maxDim=1024, quality=0.7){
+    const img = await fileToImage(file);
+    const c = document.createElement("canvas");
+    const ctx = c.getContext("2d");
+    const s = fit(img.width, img.height, maxDim);
+    c.width = s.w; c.height = s.h;
+    ctx.drawImage(img,0,0,s.w,s.h);
+    const blob = await new Promise(res => c.toBlob(res,"image/jpeg",quality));
+    return { base64: await blobToBase64(blob), mime:"image/jpeg", filename:"evidencia.jpg" };
+  }
+
+  // ===== Cámaras =====
+  async function loadCameras(){
+    const cams = await Html5Qrcode.getCameras();
+    if(!cams || !cams.length) throw new Error("Sin cámaras disponibles");
+
+    cameraSelect.innerHTML = cams.map(c => `<option value="${c.id}">${c.label || "Cámara"}</option>`).join("");
+
+    // elige trasera si se detecta por label
+    const idxBack = cams.findIndex(c => {
+      const s = (c.label || "").toLowerCase();
+      return s.includes("back") || s.includes("environment") || s.includes("rear");
+    });
+    if(idxBack >= 0) cameraSelect.value = cams[idxBack].id;
+  }
+
+  // ===== Scanner =====
+  async function startScan(){
+    html5Qr = html5Qr || new Html5Qrcode("reader");
+    setScanStatus("escaneando…", "ok");
+
+    try{
+      await loadCameras();
+      const camId = cameraSelect.value;
+
+      // Si ya estaba escaneando, detén antes
+      try { if (html5Qr.isScanning) await html5Qr.stop(); } catch(_){}
+
+      await html5Qr.start(
+        camId,
+        { fps: 10, qrbox: { width: 240, height: 240 } },
+        async (text) => {
+          // anti duplicados por tiempo
+          const now = Date.now();
+          if(text === lastScanText && (now - lastScanAt) < DUP_WINDOW_MS) return;
+          lastScanText = text;
+          lastScanAt = now;
+
+          const parsed = parseQR(text);
+          if(!parsed.ok){
+            setScanStatus("QR inválido", "bad");
+            log(parsed.error, true);
+            setReadyToSubmit(false);
+            return;
+          }
+
+          fillMinimal(parsed.data);
+          await loadOperators(parsed.data.area_full);
+
+          setScanStatus("QR OK (" + parsed.data.area_code + ")", "ok");
+          log("Listo para registrar.");
+          setReadyToSubmit(true);
+
+          // Detén escaneo para evitar repetición
+          try { if (html5Qr.isScanning) await html5Qr.stop(); } catch(_){}
+        },
+        () => {}
+      );
+    }catch(err){
+      setScanStatus("permiso/cámara falló", "bad");
+      log(err.message, true);
+      setReadyToSubmit(false);
+    }
+  }
+
+  async function retry(){
+    lastScanText = "";
+    lastScanAt = 0;
+    setScanStatus("listo");
+    log("esperando QR…");
+    setReadyToSubmit(false);
+
+    ["qr_raw","area_full","area_code","atados_norm","atado_actual","atados_total","medida","pn"].forEach(id => $(id).value="");
+    ["pedido","descripcion","cantidad","atados_view"].forEach(id => $(id).value="");
+
+    $("operador").innerHTML = `<option value="">-- Escanea un QR --</option>`;
+    $("cantidad_ok").value = "";
+    $("cantidad_real").value = "";
+    realWrap.classList.add("hidden");
+
+    await startScan();
+  }
+
+  // ===== Submit =====
+  function validate(){
+    if(!$("qr_raw").value) return "Primero escanea un QR.";
+    if(!$("operador").value) return "Selecciona Operador/Soldador.";
+    if(!cantidadOk.value) return "Selecciona si la cantidad es correcta.";
+    if(cantidadOk.value === "No"){
+      const n = Number(cantidadReal.value);
+      if(!Number.isFinite(n) || n <= 0) return "Captura Cantidad real (>0).";
+    }
+    return "";
+  }
+
+  function buildPayload(){
+    return {
+      timestamp: new Date().toISOString(),
+      qr_raw: $("qr_raw").value,
+      area: $("area_full").value,
+      area_code: $("area_code").value,
+      operador: $("operador").value,
+
+      pedido: $("pedido").value,
+      descripcion: $("descripcion").value,
+      cantidad: $("cantidad").value,
+
+      atados_norm: $("atados_norm").value,
+      atado_actual: $("atado_actual").value,
+      atados_total: $("atados_total").value,
+
+      medida: $("medida").value,
+      pn: $("pn").value,
+
+      cantidad_ok: $("cantidad_ok").value,
+      cantidad_real: $("cantidad_real").value ? Number($("cantidad_real").value) : null,
+      observaciones: $("observaciones").value.trim(),
+      foto: null
+    };
+  }
+
+  $("form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const err = validate();
+    if(err) return log(err, true);
+
+    if (isSubmitting) return; // anti doble submit
+    isSubmitting = true;
+    btnSend.disabled = true;
+    btnSend.textContent = "Enviando…";
+
+    try{
+      const payload = buildPayload();
+      const file = $("foto").files?.[0];
+      if(file) payload.foto = await compressToJpegBase64(file, 1024, 0.7);
+
+      const res = await fetch(SCRIPT_URL, {
+        method:"POST",
+        redirect:"follow",
+        headers:{ "Content-Type":"text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      });
+
+      const json = await res.json().catch(()=> ({}));
+      if(!res.ok || json.ok === false) throw new Error(json.error || "Error al guardar");
+
+      log("Registrado ✅ Fila: " + json.row + (json.fileUrl ? " | Foto guardada" : ""));
+      // Opcional: bloquear submit hasta reintentar
+      // setReadyToSubmit(false);
+    }catch(ex){
+      log(ex.message || String(ex), true);
+    }finally{
+      isSubmitting = false;
+      btnSend.disabled = false;
+      btnSend.textContent = "Registrar";
+    }
+  });
+
+  // UI events
+  btnStart.addEventListener("click", startScan);
+  btnRetry.addEventListener("click", retry);
+
+  cantidadOk.addEventListener("change", () => {
+    if(cantidadOk.value === "No"){
+      realWrap.classList.remove("hidden");
+      cantidadReal.focus();
+    }else{
+      realWrap.classList.add("hidden");
+      cantidadReal.value = "";
+    }
+  });
+
+  // init
+  setScanStatus("listo");
+  log("esperando QR…");
+  setReadyToSubmit(false);
+})();
+</script>
+</body>
+</html>
