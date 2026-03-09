@@ -17,67 +17,241 @@
       --btnText:#fff;
       --bad:#d93025;
       --ok:#1e8e3e;
-      --r:12px;
+      --r:14px;
       --sans: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     }
+
     *{ box-sizing:border-box; }
-    body{ margin:0; font-family:var(--sans); background:var(--bg); color:var(--text); }
-    .wrap{ max-width:420px; margin:0 auto; padding:14px; }
+
+    body{
+      margin:0;
+      font-family:var(--sans);
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    .wrap{
+      width:min(100%, 1100px);
+      margin:0 auto;
+      padding:16px;
+    }
 
     .header{
-      display:flex; align-items:center; gap:12px;
-      padding:10px 6px 6px;
+      display:flex;
+      align-items:center;
+      gap:14px;
+      padding:8px 4px 14px;
     }
+
     .logoBox{
-      width:56px; height:56px;
+      width:62px;
+      height:62px;
       border:1px solid var(--line);
-      border-radius:12px;
+      border-radius:14px;
       background:#fff;
-      display:flex; align-items:center; justify-content:center;
-      overflow:hidden; flex:0 0 auto;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+      flex:0 0 auto;
     }
-    .logoBox img{ width:100%; height:100%; object-fit:contain; }
+
+    .logoBox img{
+      width:100%;
+      height:100%;
+      object-fit:contain;
+    }
+
     .titleBox{ flex:1 1 auto; }
-    h2{ margin:0; font-size:18px; line-height:1.1; }
-    .sub{ margin:2px 0 0; color:var(--muted); font-size:13px; }
 
-    .card{ background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:12px; }
-    #reader{ width:100%; border-radius:10px; overflow:hidden; border:1px solid var(--line); background:#000; }
+    h2{
+      margin:0;
+      font-size:22px;
+      line-height:1.1;
+    }
 
-    .btnrow{ display:flex; gap:10px; margin-top:10px; }
+    .sub{
+      margin:4px 0 0;
+      color:var(--muted);
+      font-size:14px;
+    }
+
+    .appGrid{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:14px;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--r);
+      padding:14px;
+    }
+
+    #reader{
+      width:100%;
+      min-height:320px;
+      border-radius:12px;
+      overflow:hidden;
+      border:1px solid var(--line);
+      background:#000;
+    }
+
+    .btnrow{
+      display:flex;
+      gap:10px;
+      margin-top:12px;
+      flex-wrap:wrap;
+    }
+
     button{
       width:100%;
-      border:none; border-radius:10px;
-      padding:10px 12px; font-weight:700;
-      background:var(--btn); color:var(--btnText);
+      min-height:50px;
+      border:none;
+      border-radius:12px;
+      padding:12px 14px;
+      font-weight:700;
+      font-size:15px;
+      background:var(--btn);
+      color:var(--btnText);
       cursor:pointer;
     }
-    button.secondary{ background:#fff; color:#111; border:1px solid var(--line); }
-    button:disabled{ opacity:.6; cursor:not-allowed; }
 
-    label{ display:block; margin-top:10px; font-size:12px; color:var(--muted); }
-    input, textarea, select{
-      width:100%; padding:10px 10px;
-      border-radius:10px;
+    button.secondary{
+      background:#fff;
+      color:#111;
       border:1px solid var(--line);
-      background:#fff; color:#111;
-      outline:none;
     }
-    textarea{ min-height:60px; resize:vertical; }
-    .inline{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+    button:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+    }
+
+    label{
+      display:block;
+      margin-top:10px;
+      margin-bottom:6px;
+      font-size:12px;
+      color:var(--muted);
+      font-weight:600;
+      letter-spacing:.2px;
+    }
+
+    input, textarea, select{
+      width:100%;
+      min-height:46px;
+      padding:11px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#fff;
+      color:#111;
+      outline:none;
+      font-size:15px;
+    }
+
+    textarea{
+      min-height:84px;
+      resize:vertical;
+    }
+
+    .inline{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:10px;
+    }
+
+    .formGrid{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:0 12px;
+    }
+
+    .field-full{
+      grid-column:1 / -1;
+    }
+
     .hidden{ display:none; }
 
     .status{
-      margin-top:10px;
-      font-size:12px;
+      margin-top:12px;
+      font-size:13px;
       border:1px dashed var(--line);
-      border-radius:10px;
-      padding:10px;
+      border-radius:12px;
+      padding:12px;
       color:var(--muted);
       white-space:pre-wrap;
+      background:#fff;
     }
+
     .bad{ color:var(--bad); }
     .ok{ color:var(--ok); }
+
+    .sectionTitle{
+      margin:0 0 8px;
+      font-size:15px;
+      font-weight:700;
+      color:#222;
+    }
+
+    .note{
+      margin-top:6px;
+      font-size:12px;
+      color:var(--bad);
+      font-weight:700;
+    }
+
+    .scanControls{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:10px;
+      margin-top:12px;
+    }
+
+    @media (min-width: 700px){
+      .wrap{ padding:20px; }
+
+      .inline{
+        grid-template-columns:1fr 1fr;
+      }
+
+      .formGrid{
+        grid-template-columns:1fr 1fr;
+      }
+
+      .scanControls{
+        grid-template-columns:1.1fr .9fr;
+        align-items:end;
+      }
+
+      .btnrow{
+        flex-wrap:nowrap;
+      }
+
+      #reader{
+        min-height:360px;
+      }
+    }
+
+    @media (min-width: 920px){
+      .appGrid{
+        grid-template-columns:420px 1fr;
+        align-items:start;
+      }
+
+      .stickyCard{
+        position:sticky;
+        top:14px;
+      }
+
+      #reader{
+        min-height:420px;
+      }
+
+      h2{ font-size:24px; }
+      .sub{ font-size:15px; }
+    }
   </style>
 </head>
 
@@ -96,88 +270,112 @@
       </div>
     </div>
 
-    <div class="card">
-      <div id="reader"></div>
+    <div class="appGrid">
+      <div class="card stickyCard">
+        <p class="sectionTitle">Escáner</p>
+        <div id="reader"></div>
 
-      <label>Cámara</label>
-      <select id="cameraSelect"></select>
+        <div class="scanControls">
+          <div>
+            <label>Cámara</label>
+            <select id="cameraSelect"></select>
+          </div>
 
-      <div class="btnrow">
-        <button id="btnStart" type="button">Iniciar</button>
-        <button id="btnRetry" type="button" class="secondary">Reintentar</button>
+          <div class="btnrow" style="margin-top:0;">
+            <button id="btnStart" type="button">Iniciar</button>
+            <button id="btnRetry" type="button" class="secondary">Reintentar</button>
+          </div>
+        </div>
+
+        <div class="status" id="scanState">Estado: listo</div>
       </div>
 
-      <div class="status" id="scanState">Estado: listo</div>
+      <form id="form" class="card">
+        <p class="sectionTitle">Registro</p>
+
+        <input type="hidden" id="qr_raw">
+        <input type="hidden" id="area_full">
+        <input type="hidden" id="area_code">
+        <input type="hidden" id="atados_norm">
+        <input type="hidden" id="atado_actual">
+        <input type="hidden" id="atados_total">
+        <input type="hidden" id="medida">
+        <input type="hidden" id="pn">
+
+        <div class="formGrid">
+          <div>
+            <label>Pedido</label>
+            <input id="pedido" readonly>
+          </div>
+
+          <div>
+            <label>Número de parte</label>
+            <input id="pn_view" readonly>
+          </div>
+
+          <div class="field-full">
+            <label>Descripción</label>
+            <textarea id="descripcion" readonly></textarea>
+          </div>
+
+          <div>
+            <label>Cantidad</label>
+            <input id="cantidad" readonly>
+          </div>
+
+          <div>
+            <label>Atados</label>
+            <input id="atados_view" readonly placeholder="56/78">
+          </div>
+
+          <div class="field-full">
+            <label>Operador / Soldador</label>
+            <select id="operador">
+              <option value="">-- Escanea un QR --</option>
+            </select>
+          </div>
+
+          <div>
+            <label>¿Cantidad correcta?</label>
+            <select id="cantidad_ok">
+              <option value="">--</option>
+              <option value="Sí">Sí</option>
+              <option value="No">No</option>
+            </select>
+          </div>
+
+          <div id="realWrap" class="hidden">
+            <label>Cantidad real</label>
+            <input id="cantidad_real" type="number" min="0" inputmode="numeric">
+          </div>
+
+          <div class="field-full">
+            <label>Observaciones</label>
+            <textarea id="observaciones"></textarea>
+          </div>
+
+          <div class="field-full">
+            <label>Foto evidencia</label>
+            <input id="foto" type="file" accept="image/*" capture="environment">
+            <div class="note">Obligatoria para registrar</div>
+          </div>
+
+          <div class="field-full">
+            <div class="btnrow" style="margin-top:14px;">
+              <button id="btnSend" type="submit" disabled>Registrar</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="status" id="logBox">LOG: esperando QR…</div>
+      </form>
     </div>
-
-    <form id="form" class="card" style="margin-top:12px;">
-      <input type="hidden" id="qr_raw">
-      <input type="hidden" id="area_full">
-      <input type="hidden" id="area_code">
-      <input type="hidden" id="atados_norm">
-      <input type="hidden" id="atado_actual">
-      <input type="hidden" id="atados_total">
-      <input type="hidden" id="medida">
-      <input type="hidden" id="pn">
-
-      <label>Pedido</label>
-      <input id="pedido" readonly>
-
-      <label>Descripción</label>
-      <textarea id="descripcion" readonly></textarea>
-
-      <div class="inline">
-        <div>
-          <label>Cantidad</label>
-          <input id="cantidad" readonly>
-        </div>
-        <div>
-          <label>Atados</label>
-          <input id="atados_view" readonly placeholder="56/78">
-        </div>
-      </div>
-
-      <label>Número de parte</label>
-      <input id="pn_view" readonly>
-
-      <label>Operador / Soldador</label>
-      <select id="operador">
-        <option value="">-- Escanea un QR --</option>
-      </select>
-
-      <div class="inline">
-        <div>
-          <label>¿Cantidad correcta?</label>
-          <select id="cantidad_ok">
-            <option value="">--</option>
-            <option value="Sí">Sí</option>
-            <option value="No">No</option>
-          </select>
-        </div>
-        <div id="realWrap" class="hidden">
-          <label>Cantidad real</label>
-          <input id="cantidad_real" type="number" min="0" inputmode="numeric">
-        </div>
-      </div>
-
-      <label>Observaciones</label>
-      <textarea id="observaciones"></textarea>
-
-      <label>Foto evidencia (opcional)</label>
-      <input id="foto" type="file" accept="image/*" capture="environment">
-
-      <div class="btnrow" style="margin-top:12px;">
-        <button id="btnSend" type="submit" disabled>Registrar</button>
-      </div>
-
-      <div class="status" id="logBox">LOG: esperando QR…</div>
-    </form>
   </div>
 
 <script>
 (() => {
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwbfT9RDX2ZNzLstarhXNzMuIuxD2_og1yOD_9YS0gOroqfj0OCu6xZfEsJD-hybK5y/exec";
-  const APP_VERSION = "tablet-fix-qr-photo-v1";
+  const APP_VERSION = "tablet-photo-required-v1";
 
   let html5Qr = null;
   let lastScanText = "";
@@ -195,6 +393,7 @@
   const cantidadOk = $("cantidad_ok");
   const realWrap = $("realWrap");
   const cantidadReal = $("cantidad_real");
+  const fotoInput = $("foto");
 
   function setScanStatus(msg, cls="") {
     scanState.className = "status " + cls;
@@ -206,8 +405,16 @@
     logBox.textContent = "LOG: " + msg;
   }
 
-  function setReadyToSubmit(ready){
-    btnSend.disabled = !ready;
+  function hasQrLoaded(){
+    return !!$("qr_raw").value;
+  }
+
+  function hasPhotoSelected(){
+    return !!fotoInput.files?.[0];
+  }
+
+  function refreshRegisterState(){
+    btnSend.disabled = !(hasQrLoaded() && hasPhotoSelected()) || isSubmitting;
   }
 
   function errorToMessage(err) {
@@ -380,10 +587,8 @@
   function blobToBase64(blob){
     return new Promise((resolve, reject) => {
       const r = new FileReader();
-
       r.onload = () => resolve(String(r.result).split(",")[1] || "");
       r.onerror = () => reject(new Error("No se pudo leer la imagen seleccionada."));
-
       r.readAsDataURL(blob);
     });
   }
@@ -458,7 +663,7 @@
           if(!parsed.ok){
             setScanStatus("QR inválido", "bad");
             log(parsed.error, true);
-            setReadyToSubmit(false);
+            refreshRegisterState();
             return;
           }
 
@@ -466,8 +671,8 @@
           await loadOperators(parsed.data.area_full);
 
           setScanStatus("QR OK (" + parsed.data.area_code + ")", "ok");
-          log("Listo para registrar.");
-          setReadyToSubmit(true);
+          log(hasPhotoSelected() ? "Listo para registrar." : "QR listo. Falta adjuntar foto.");
+          refreshRegisterState();
 
           try { if (html5Qr.isScanning) await html5Qr.stop(); } catch(_){}
         },
@@ -476,7 +681,7 @@
     }catch(err){
       setScanStatus("permiso/cámara falló", "bad");
       log(errorToMessage(err), true);
-      setReadyToSubmit(false);
+      refreshRegisterState();
     }
   }
 
@@ -485,25 +690,37 @@
     lastScanAt = 0;
     setScanStatus("listo");
     log("esperando QR…");
-    setReadyToSubmit(false);
+    $("qr_raw").value = "";
+    $("area_full").value = "";
+    $("area_code").value = "";
+    $("atados_norm").value = "";
+    $("atado_actual").value = "";
+    $("atados_total").value = "";
+    $("medida").value = "";
+    $("pn").value = "";
 
-    ["qr_raw","area_full","area_code","atados_norm","atado_actual","atados_total","medida","pn"].forEach(id => $(id).value="");
-    ["pedido","descripcion","cantidad","atados_view","pn_view"].forEach(id => $(id).value="");
+    $("pedido").value = "";
+    $("descripcion").value = "";
+    $("cantidad").value = "";
+    $("atados_view").value = "";
+    $("pn_view").value = "";
 
     $("operador").innerHTML = `<option value="">-- Escanea un QR --</option>`;
     $("cantidad_ok").value = "";
     $("cantidad_real").value = "";
-    $("foto").value = "";
     $("observaciones").value = "";
+    $("foto").value = "";
     realWrap.classList.add("hidden");
 
+    refreshRegisterState();
     await startScan();
   }
 
   function validate(){
-    if(!$("qr_raw").value) return "Primero escanea un QR.";
+    if(!hasQrLoaded()) return "Primero escanea un QR.";
     if(!$("operador").value) return "Selecciona Operador/Soldador.";
     if(!cantidadOk.value) return "Selecciona si la cantidad es correcta.";
+    if(!hasPhotoSelected()) return "La foto evidencia es obligatoria.";
     if(cantidadOk.value === "No"){
       const n = Number(cantidadReal.value);
       if(!Number.isFinite(n) || n <= 0) return "Captura Cantidad real (>0).";
@@ -537,13 +754,17 @@
     };
   }
 
-  $("foto").addEventListener("change", (e) => {
+  fotoInput.addEventListener("change", (e) => {
     const file = e.target.files?.[0];
+
     if (!file) {
-      log("Sin foto seleccionada.");
+      log(hasQrLoaded() ? "QR listo. Falta adjuntar foto." : "Sin foto seleccionada.");
+      refreshRegisterState();
       return;
     }
-    log(`Foto: ${file.name || "sin nombre"} | ${file.type || "sin tipo"} | ${file.size || 0} bytes`);
+
+    log(`Foto lista: ${file.name || "sin nombre"} | ${file.type || "sin tipo"} | ${file.size || 0} bytes`);
+    refreshRegisterState();
   });
 
   $("form").addEventListener("submit", async (e) => {
@@ -554,16 +775,14 @@
 
     if (isSubmitting) return;
     isSubmitting = true;
-    btnSend.disabled = true;
+    refreshRegisterState();
     btnSend.textContent = "Enviando…";
 
     try{
       const payload = buildPayload();
-      const file = $("foto").files?.[0];
+      const file = fotoInput.files?.[0];
 
-      if(file) {
-        payload.foto = await compressToJpegBase64(file, 1024, 0.7);
-      }
+      payload.foto = await compressToJpegBase64(file, 1024, 0.7);
 
       const res = await fetch(SCRIPT_URL, {
         method:"POST",
@@ -591,8 +810,8 @@
       log(errorToMessage(ex), true);
     }finally{
       isSubmitting = false;
-      btnSend.disabled = false;
       btnSend.textContent = "Registrar";
+      refreshRegisterState();
     }
   });
 
@@ -611,7 +830,7 @@
 
   setScanStatus("listo");
   log("Versión: " + APP_VERSION + " | esperando QR…");
-  setReadyToSubmit(false);
+  refreshRegisterState();
 })();
 </script>
 </body>
