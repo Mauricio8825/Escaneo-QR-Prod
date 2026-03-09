@@ -84,10 +84,8 @@
 <body>
   <div class="wrap">
 
-    <!-- Header con logo -->
     <div class="header">
       <div class="logoBox">
-        <!-- Coloca logo.png en la MISMA carpeta que este HTML -->
         <img src="logo.png" alt="Logo" id="logoImg"
              onerror="this.style.display='none'; document.getElementById('logoPlaceholder').style.display='block';">
         <span id="logoPlaceholder" style="color:#999;font-size:11px;display:none;">LOGO</span>
@@ -113,7 +111,7 @@
     </div>
 
     <form id="form" class="card" style="margin-top:12px;">
-      <!-- Ocultos (para Excel) -->
+      <!-- Ocultos -->
       <input type="hidden" id="qr_raw">
       <input type="hidden" id="area_full">
       <input type="hidden" id="area_code">
@@ -123,7 +121,6 @@
       <input type="hidden" id="medida">
       <input type="hidden" id="pn">
 
-      <!-- Visible minimal -->
       <label>Pedido</label>
       <input id="pedido" readonly>
 
@@ -140,6 +137,10 @@
           <input id="atados_view" readonly placeholder="56/78">
         </div>
       </div>
+
+      <!-- CAMBIO: mostrar número de parte en la interfaz -->
+      <label>Número de parte</label>
+      <input id="pn_view" readonly>
 
       <label>Operador / Soldador</label>
       <select id="operador">
@@ -206,6 +207,7 @@
     scanState.className = "status " + cls;
     scanState.textContent = "Estado: " + msg;
   }
+
   function log(msg, bad=false) {
     logBox.className = "status " + (bad ? "bad" : "");
     logBox.textContent = "LOG: " + msg;
@@ -213,6 +215,17 @@
 
   function setReadyToSubmit(ready){
     btnSend.disabled = !ready;
+  }
+
+  // CAMBIO: convertir errores raros a texto útil
+  function errorToMessage(err) {
+    if (!err) return "Error desconocido";
+    if (err instanceof Error && err.message) return err.message;
+    if (typeof err === "string") return err;
+    if (err && typeof err.message === "string" && err.message.trim()) return err.message;
+    if (err && err.type) return "Error del navegador: " + err.type;
+    try { return JSON.stringify(err); } catch (_) {}
+    return String(err);
   }
 
   // ===== Normalizadores =====
@@ -319,6 +332,9 @@
     $("descripcion").value = d.descripcion;
     $("cantidad").value = d.cantidad;
     $("atados_view").value = d.atados_norm;
+
+    // CAMBIO: mostrar P/N visible
+    $("pn_view").value = d.pn;
   }
 
   // ===== Operadores =====
@@ -340,7 +356,7 @@
       sel.innerHTML = `<option value="">-- Selecciona --</option>` + ops.map(o => `<option>${escapeHtml(o)}</option>`).join("");
     }catch(err){
       sel.innerHTML = `<option value="">(Error al cargar)</option>`;
-      log("Error operadores: " + err.message, true);
+      log("Error operadores: " + errorToMessage(err), true);
     }
   }
 
@@ -356,22 +372,34 @@
       const url = URL.createObjectURL(file);
       const img = new Image();
       img.onload = ()=>{ URL.revokeObjectURL(url); resolve(img); };
-      img.onerror = reject;
+
+      // CAMBIO: devolver Error real en vez de Event crudo
+      img.onerror = ()=> {
+        URL.revokeObjectURL(url);
+        reject(new Error("No se pudo abrir la imagen seleccionada."));
+      };
+
       img.src = url;
     });
   }
+
   function fit(w,h,maxDim){
     const s = Math.min(1, maxDim / Math.max(w,h));
     return { w: Math.round(w*s), h: Math.round(h*s) };
   }
+
   function blobToBase64(blob){
     return new Promise((resolve,reject)=>{
       const r = new FileReader();
       r.onload = ()=> resolve(String(r.result).split(",")[1] || "");
-      r.onerror = reject;
+
+      // CAMBIO: devolver Error real en vez de Event crudo
+      r.onerror = ()=> reject(new Error("No se pudo leer la imagen seleccionada."));
+
       r.readAsDataURL(blob);
     });
   }
+
   async function compressToJpegBase64(file, maxDim=1024, quality=0.7){
     const img = await fileToImage(file);
     const c = document.createElement("canvas");
@@ -390,7 +418,6 @@
 
     cameraSelect.innerHTML = cams.map(c => `<option value="${c.id}">${c.label || "Cámara"}</option>`).join("");
 
-    // elige trasera si se detecta por label
     const idxBack = cams.findIndex(c => {
       const s = (c.label || "").toLowerCase();
       return s.includes("back") || s.includes("environment") || s.includes("rear");
@@ -407,14 +434,12 @@
       await loadCameras();
       const camId = cameraSelect.value;
 
-      // Si ya estaba escaneando, detén antes
       try { if (html5Qr.isScanning) await html5Qr.stop(); } catch(_){}
 
       await html5Qr.start(
         camId,
         { fps: 10, qrbox: { width: 240, height: 240 } },
         async (text) => {
-          // anti duplicados por tiempo
           const now = Date.now();
           if(text === lastScanText && (now - lastScanAt) < DUP_WINDOW_MS) return;
           lastScanText = text;
@@ -435,14 +460,13 @@
           log("Listo para registrar.");
           setReadyToSubmit(true);
 
-          // Detén escaneo para evitar repetición
           try { if (html5Qr.isScanning) await html5Qr.stop(); } catch(_){}
         },
         () => {}
       );
     }catch(err){
       setScanStatus("permiso/cámara falló", "bad");
-      log(err.message, true);
+      log(errorToMessage(err), true);
       setReadyToSubmit(false);
     }
   }
@@ -455,7 +479,8 @@
     setReadyToSubmit(false);
 
     ["qr_raw","area_full","area_code","atados_norm","atado_actual","atados_total","medida","pn"].forEach(id => $(id).value="");
-    ["pedido","descripcion","cantidad","atados_view"].forEach(id => $(id).value="");
+    // CAMBIO: limpiar también el P/N visible
+    ["pedido","descripcion","cantidad","atados_view","pn_view"].forEach(id => $(id).value="");
 
     $("operador").innerHTML = `<option value="">-- Escanea un QR --</option>`;
     $("cantidad_ok").value = "";
@@ -509,7 +534,7 @@
     const err = validate();
     if(err) return log(err, true);
 
-    if (isSubmitting) return; // anti doble submit
+    if (isSubmitting) return;
     isSubmitting = true;
     btnSend.disabled = true;
     btnSend.textContent = "Enviando…";
@@ -526,14 +551,26 @@
         body: JSON.stringify(payload)
       });
 
-      const json = await res.json().catch(()=> ({}));
-      if(!res.ok || json.ok === false) throw new Error(json.error || "Error al guardar");
+      // CAMBIO: leer primero el texto y luego parsear para mostrar el mensaje real del backend
+      const raw = await res.text();
+
+      let json;
+      try {
+        json = JSON.parse(raw);
+      } catch (_) {
+        throw new Error(raw || "La respuesta del servidor no fue válida.");
+      }
+
+      if(!res.ok || json.ok === false) {
+        throw new Error(json.error || raw || "Error al guardar");
+      }
 
       log("Registrado ✅ Fila: " + json.row + (json.fileUrl ? " | Foto guardada" : ""));
-      // Opcional: bloquear submit hasta reintentar
-      // setReadyToSubmit(false);
     }catch(ex){
-      log(ex.message || String(ex), true);
+      console.error("Error submit:", ex);
+
+      // CAMBIO: ya no mostrar [object Event]
+      log(errorToMessage(ex), true);
     }finally{
       isSubmitting = false;
       btnSend.disabled = false;
