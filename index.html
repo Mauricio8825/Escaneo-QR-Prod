@@ -156,12 +156,6 @@
       resize:vertical;
     }
 
-    .inline{
-      display:grid;
-      grid-template-columns:1fr;
-      gap:10px;
-    }
-
     .formGrid{
       display:grid;
       grid-template-columns:1fr;
@@ -209,12 +203,14 @@
       margin-top:12px;
     }
 
+    .hint{
+      margin-top:6px;
+      font-size:12px;
+      color:var(--muted);
+    }
+
     @media (min-width: 700px){
       .wrap{ padding:20px; }
-
-      .inline{
-        grid-template-columns:1fr 1fr;
-      }
 
       .formGrid{
         grid-template-columns:1fr 1fr;
@@ -303,6 +299,13 @@
         <input type="hidden" id="pn">
 
         <div class="formGrid">
+
+          <div>
+            <label>Planta</label>
+            <input id="planta" type="text" placeholder="Hidalgo" autocomplete="off">
+            <div class="hint" id="plantaHint">Si el QR nuevo incluye Planta, se llenará automáticamente.</div>
+          </div>
+
           <div>
             <label>Pedido</label>
             <input id="pedido" readonly>
@@ -375,7 +378,7 @@
 <script>
 (() => {
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwbfT9RDX2ZNzLstarhXNzMuIuxD2_og1yOD_9YS0gOroqfj0OCu6xZfEsJD-hybK5y/exec";
-  const APP_VERSION = "tablet-photo-required-v1";
+  const APP_VERSION = "planta-qr-v2";
 
   let html5Qr = null;
   let lastScanText = "";
@@ -394,6 +397,17 @@
   const realWrap = $("realWrap");
   const cantidadReal = $("cantidad_real");
   const fotoInput = $("foto");
+  const plantaInput = $("planta");
+  const plantaHint = $("plantaHint");
+
+  plantaInput.value = localStorage.getItem("ssp_planta") || "";
+
+  plantaInput.addEventListener("input", () => {
+    if (!plantaInput.readOnly) {
+      localStorage.setItem("ssp_planta", plantaInput.value.trim());
+    }
+    refreshRegisterState();
+  });
 
   function setScanStatus(msg, cls="") {
     scanState.className = "status " + cls;
@@ -413,8 +427,12 @@
     return !!fotoInput.files?.[0];
   }
 
+  function hasPlant(){
+    return !!plantaInput.value.trim();
+  }
+
   function refreshRegisterState(){
-    btnSend.disabled = !(hasQrLoaded() && hasPhotoSelected()) || isSubmitting;
+    btnSend.disabled = !(hasQrLoaded() && hasPhotoSelected() && hasPlant()) || isSubmitting;
   }
 
   function errorToMessage(err) {
@@ -445,9 +463,13 @@
       "embarques": "EM",
       "dobles y troquel": "DT",
       "pintura": "PN",
-      "rodamientos": "RD"
+      "rodamientos": "RD",
+      "fexder": "FX"
     };
-    const ALIAS = { "rollformer": "roll former", "doblesytroquel": "dobles y troquel" };
+    const ALIAS = {
+      "rollformer": "roll former",
+      "doblesytroquel": "dobles y troquel"
+    };
 
     let norm = normalizeText_(areaFull);
     const compact = norm.replace(/\s/g,"");
@@ -487,32 +509,68 @@
 
   function parseQR(raw){
     const parts = String(raw).split("|").map(x => x.trim());
-    if (parts.length < 7) return { ok:false, error:`QR incompleto (${parts.length}/7).` };
 
-    const [area, pedido, descripcion, cantidad, atados, medida, pn] = parts;
+    // Nuevo formato: Planta|Area|Pedido|Descripcion|Cantidad|Atados|Medida|Partnumber
+    if (parts.length >= 8) {
+      const [planta, area, pedido, descripcion, cantidad, atados, medida, pn] = parts;
 
-    const cant = safeInt(cantidad);
-    if (cant === null || cant < 0) return { ok:false, error:`Cantidad inválida: ${cantidad}` };
+      const cant = safeInt(cantidad);
+      if (cant === null || cant < 0) return { ok:false, error:`Cantidad inválida: ${cantidad}` };
 
-    const at = normalizeAtados(atados);
-    if (!at.ok) return { ok:false, error:`Atados inválido: ${atados}` };
+      const at = normalizeAtados(atados);
+      if (!at.ok) return { ok:false, error:`Atados inválido: ${atados}` };
 
-    return {
-      ok:true,
-      data: {
-        qr_raw: raw,
-        area_full: area,
-        area_code: areaToCode2(area),
-        pedido,
-        descripcion,
-        cantidad: String(cant),
-        atados_norm: at.norm,
-        atado_actual: String(at.a),
-        atados_total: String(at.b),
-        medida,
-        pn
-      }
-    };
+      return {
+        ok:true,
+        data: {
+          qr_raw: raw,
+          planta,
+          plantaFromQr: true,
+          area_full: area,
+          area_code: areaToCode2(area),
+          pedido,
+          descripcion,
+          cantidad: String(cant),
+          atados_norm: at.norm,
+          atado_actual: String(at.a),
+          atados_total: String(at.b),
+          medida,
+          pn
+        }
+      };
+    }
+
+    // Formato viejo: Area|Pedido|Descripcion|Cantidad|Atados|Medida|Partnumber
+    if (parts.length === 7) {
+      const [area, pedido, descripcion, cantidad, atados, medida, pn] = parts;
+
+      const cant = safeInt(cantidad);
+      if (cant === null || cant < 0) return { ok:false, error:`Cantidad inválida: ${cantidad}` };
+
+      const at = normalizeAtados(atados);
+      if (!at.ok) return { ok:false, error:`Atados inválido: ${atados}` };
+
+      return {
+        ok:true,
+        data: {
+          qr_raw: raw,
+          planta: "",
+          plantaFromQr: false,
+          area_full: area,
+          area_code: areaToCode2(area),
+          pedido,
+          descripcion,
+          cantidad: String(cant),
+          atados_norm: at.norm,
+          atado_actual: String(at.a),
+          atados_total: String(at.b),
+          medida,
+          pn
+        }
+      };
+    }
+
+    return { ok:false, error:`QR incompleto (${parts.length}). Esperado: 8 campos con Planta o 7 campos formato viejo.` };
   }
 
   function fillMinimal(d){
@@ -530,6 +588,18 @@
     $("cantidad").value = d.cantidad;
     $("atados_view").value = d.atados_norm;
     $("pn_view").value = d.pn;
+
+    if (d.plantaFromQr && d.planta) {
+      plantaInput.value = d.planta;
+      plantaInput.readOnly = true;
+      plantaHint.textContent = "Planta tomada del QR.";
+    } else {
+      plantaInput.readOnly = false;
+      if (!plantaInput.value.trim()) {
+        plantaInput.value = localStorage.getItem("ssp_planta") || "";
+      }
+      plantaHint.textContent = "QR viejo detectado. Captura Planta manualmente.";
+    }
   }
 
   async function loadOperators(areaFull){
@@ -556,7 +626,11 @@
 
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, m => ({
-      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+      "&":"&amp;",
+      "<":"&lt;",
+      ">":"&gt;",
+      '"':"&quot;",
+      "'":"&#039;"
     }[m]));
   }
 
@@ -671,7 +745,14 @@
           await loadOperators(parsed.data.area_full);
 
           setScanStatus("QR OK (" + parsed.data.area_code + ")", "ok");
-          log(hasPhotoSelected() ? "Listo para registrar." : "QR listo. Falta adjuntar foto.");
+          if (parsed.data.plantaFromQr) {
+            log(hasPhotoSelected() ? "Listo para registrar." : "QR nuevo detectado. Falta adjuntar foto.");
+          } else {
+            log(hasPhotoSelected()
+              ? "QR viejo detectado. Verifica Planta y registra."
+              : "QR viejo detectado. Captura/verifica Planta y adjunta foto.");
+          }
+
           refreshRegisterState();
 
           try { if (html5Qr.isScanning) await html5Qr.stop(); } catch(_){}
@@ -690,6 +771,7 @@
     lastScanAt = 0;
     setScanStatus("listo");
     log("esperando QR…");
+
     $("qr_raw").value = "";
     $("area_full").value = "";
     $("area_code").value = "";
@@ -705,6 +787,10 @@
     $("atados_view").value = "";
     $("pn_view").value = "";
 
+    plantaInput.readOnly = false;
+    plantaInput.value = localStorage.getItem("ssp_planta") || "";
+    plantaHint.textContent = "Si el QR nuevo incluye Planta, se llenará automáticamente.";
+
     $("operador").innerHTML = `<option value="">-- Escanea un QR --</option>`;
     $("cantidad_ok").value = "";
     $("cantidad_real").value = "";
@@ -718,6 +804,7 @@
 
   function validate(){
     if(!hasQrLoaded()) return "Primero escanea un QR.";
+    if(!plantaInput.value.trim()) return "Captura la Planta.";
     if(!$("operador").value) return "Selecciona Operador/Soldador.";
     if(!cantidadOk.value) return "Selecciona si la cantidad es correcta.";
     if(!hasPhotoSelected()) return "La foto evidencia es obligatoria.";
@@ -732,6 +819,7 @@
     return {
       timestamp: new Date().toISOString(),
       qr_raw: $("qr_raw").value,
+      planta: plantaInput.value.trim(),
       area: $("area_full").value,
       area_code: $("area_code").value,
       operador: $("operador").value,
