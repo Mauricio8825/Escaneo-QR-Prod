@@ -302,8 +302,13 @@
 
           <div>
             <label>Planta</label>
-            <input id="planta" type="text" placeholder="Hidalgo" autocomplete="off">
-            <div class="hint" id="plantaHint">Si el QR nuevo incluye Planta, se llenará automáticamente.</div>
+            <select id="planta">
+              <option value="">-- Selecciona planta --</option>
+              <option value="Hidalgo">Hidalgo</option>
+              <option value="Bosques">Bosques</option>
+              <option value="Ganadera">Ganadera</option>
+            </select>
+            <div class="hint" id="plantaHint">Si el QR incluye planta o código de planta, se seleccionará automáticamente.</div>
           </div>
 
           <div>
@@ -378,7 +383,7 @@
 <script>
 (() => {
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwbfT9RDX2ZNzLstarhXNzMuIuxD2_og1yOD_9YS0gOroqfj0OCu6xZfEsJD-hybK5y/exec";
-  const APP_VERSION = "planta-qr-v2";
+  const APP_VERSION = "planta-select-qr-v3";
 
   let html5Qr = null;
   let lastScanText = "";
@@ -402,9 +407,9 @@
 
   plantaInput.value = localStorage.getItem("ssp_planta") || "";
 
-  plantaInput.addEventListener("input", () => {
-    if (!plantaInput.readOnly) {
-      localStorage.setItem("ssp_planta", plantaInput.value.trim());
+  plantaInput.addEventListener("change", () => {
+    if (!plantaInput.disabled) {
+      localStorage.setItem("ssp_planta", plantaInput.value);
     }
     refreshRegisterState();
   });
@@ -428,7 +433,7 @@
   }
 
   function hasPlant(){
-    return !!plantaInput.value.trim();
+    return !!plantaInput.value;
   }
 
   function refreshRegisterState(){
@@ -454,6 +459,29 @@
       .replace(/\s+/g," ");
   }
 
+  function normalizePlantFromQr(rawPlant){
+    const p = normalizeText_(rawPlant);
+
+    const map = {
+      "h": "Hidalgo",
+      "hid": "Hidalgo",
+      "hgo": "Hidalgo",
+      "hidalgo": "Hidalgo",
+
+      "b": "Bosques",
+      "bos": "Bosques",
+      "bosq": "Bosques",
+      "bosques": "Bosques",
+
+      "g": "Ganadera",
+      "gan": "Ganadera",
+      "gdr": "Ganadera",
+      "ganadera": "Ganadera"
+    };
+
+    return map[p] || "";
+  }
+
   function areaToCode2(areaFull){
     if(!areaFull) return "";
     const MAP = {
@@ -464,6 +492,8 @@
       "dobles y troquel": "DT",
       "pintura": "PN",
       "rodamientos": "RD",
+      "bosques rf": "BRF",
+      "bosques": "BS",
       "fexder": "FX"
     };
     const ALIAS = {
@@ -589,16 +619,20 @@
     $("atados_view").value = d.atados_norm;
     $("pn_view").value = d.pn;
 
-    if (d.plantaFromQr && d.planta) {
-      plantaInput.value = d.planta;
-      plantaInput.readOnly = true;
-      plantaHint.textContent = "Planta tomada del QR.";
+    const plantFromQr = normalizePlantFromQr(d.planta);
+
+    if (d.plantaFromQr && plantFromQr) {
+      plantaInput.value = plantFromQr;
+      plantaInput.disabled = true;
+      plantaHint.textContent = `Planta detectada desde QR: ${plantFromQr}`;
     } else {
-      plantaInput.readOnly = false;
-      if (!plantaInput.value.trim()) {
+      plantaInput.disabled = false;
+      if (!plantaInput.value) {
         plantaInput.value = localStorage.getItem("ssp_planta") || "";
       }
-      plantaHint.textContent = "QR viejo detectado. Captura Planta manualmente.";
+      plantaHint.textContent = d.plantaFromQr
+        ? "El QR trae planta, pero no coincide con catálogo. Selecciónala manualmente."
+        : "QR viejo detectado. Selecciona la planta manualmente.";
     }
   }
 
@@ -746,11 +780,13 @@
 
           setScanStatus("QR OK (" + parsed.data.area_code + ")", "ok");
           if (parsed.data.plantaFromQr) {
-            log(hasPhotoSelected() ? "Listo para registrar." : "QR nuevo detectado. Falta adjuntar foto.");
+            log(hasPhotoSelected()
+              ? "QR nuevo detectado. Planta cargada. Listo para registrar."
+              : "QR nuevo detectado. Planta cargada. Falta adjuntar foto.");
           } else {
             log(hasPhotoSelected()
-              ? "QR viejo detectado. Verifica Planta y registra."
-              : "QR viejo detectado. Captura/verifica Planta y adjunta foto.");
+              ? "QR viejo detectado. Verifica planta y registra."
+              : "QR viejo detectado. Selecciona planta y adjunta foto.");
           }
 
           refreshRegisterState();
@@ -787,9 +823,9 @@
     $("atados_view").value = "";
     $("pn_view").value = "";
 
-    plantaInput.readOnly = false;
+    plantaInput.disabled = false;
     plantaInput.value = localStorage.getItem("ssp_planta") || "";
-    plantaHint.textContent = "Si el QR nuevo incluye Planta, se llenará automáticamente.";
+    plantaHint.textContent = "Si el QR incluye planta o código de planta, se seleccionará automáticamente.";
 
     $("operador").innerHTML = `<option value="">-- Escanea un QR --</option>`;
     $("cantidad_ok").value = "";
@@ -804,7 +840,7 @@
 
   function validate(){
     if(!hasQrLoaded()) return "Primero escanea un QR.";
-    if(!plantaInput.value.trim()) return "Captura la Planta.";
+    if(!plantaInput.value) return "Selecciona la Planta.";
     if(!$("operador").value) return "Selecciona Operador/Soldador.";
     if(!cantidadOk.value) return "Selecciona si la cantidad es correcta.";
     if(!hasPhotoSelected()) return "La foto evidencia es obligatoria.";
@@ -819,7 +855,7 @@
     return {
       timestamp: new Date().toISOString(),
       qr_raw: $("qr_raw").value,
-      planta: plantaInput.value.trim(),
+      planta: plantaInput.value,
       area: $("area_full").value,
       area_code: $("area_code").value,
       operador: $("operador").value,
